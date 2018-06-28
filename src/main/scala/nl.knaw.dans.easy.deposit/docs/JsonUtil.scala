@@ -28,6 +28,8 @@ import org.json4s.native.JsonMethods
 import org.json4s.native.Serialization.write
 import org.json4s.{ CustomSerializer, DefaultFormats, Diff, Extraction, Formats, JsonInput }
 
+import scala.reflect.api
+import scala.reflect.api.TypeTags
 import scala.reflect.runtime.universe.typeOf
 import scala.util.{ Failure, Success, Try }
 
@@ -83,7 +85,11 @@ object JsonUtil {
     enumerations.map(new EnumNameSerializer(_)) ++
     JodaTimeSerializers.all
 
-  implicit class RichJsonInput(body: JsonInput) {
+  // this cannot be inlined due to an experimental feature in Scala
+  // similar problem + explanation: https://stackoverflow.com/a/20253865/2389405
+  private def getType[A: Manifest] = typeOf[A].typeSymbol.name.toString
+
+  implicit class RichJsonInput(val body: JsonInput) extends AnyVal {
     def deserialize[A: Manifest]: Try[A] = {
       for {
         parsed <- Try { JsonMethods.parse(body) }
@@ -99,8 +105,7 @@ object JsonUtil {
         case cause: IllegalArgumentException if t.getMessage == "unknown error" => cause
         case _ => t
       }
-      val className = typeOf[A].typeSymbol.name.toString
-      Failure(InvalidDocumentException(className, cause))
+      Failure(InvalidDocumentException(getType[A], cause))
     }
 
     private def rejectNotExpectedContent[T](parsed: JValue, extracted: T): Try[Unit] = {
