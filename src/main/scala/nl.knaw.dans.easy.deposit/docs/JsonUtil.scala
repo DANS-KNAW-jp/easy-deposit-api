@@ -28,6 +28,8 @@ import org.json4s.native.JsonMethods
 import org.json4s.native.Serialization.write
 import org.json4s.{ CustomSerializer, DefaultFormats, Diff, Extraction, Formats, JsonInput }
 
+import scala.reflect.api
+import scala.reflect.api.TypeTags
 import scala.reflect.runtime.universe.typeOf
 import scala.util.{ Failure, Success, Try }
 

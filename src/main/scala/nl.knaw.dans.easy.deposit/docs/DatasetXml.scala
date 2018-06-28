@@ -27,6 +27,8 @@ object DatasetXml {
   def apply(dm: DatasetMetadata): Try[Elem] = Try {
     implicit val lang: Option[Attribute] = dm.languageOfDescription.map(l => new PrefixedAttribute("xml", "lang", l.key, Null))
 
+    val (schemedDates, plainDates) = dm.getDates
+
     <ddm:DDM
       xmlns:dc="http://purl.org/dc/elements/1.1/"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -50,8 +52,8 @@ object DatasetXml {
         { dm.getRightsHolders.map(author => <dcterms:rightsHolder>{ author.toString }</dcterms:rightsHolder>) }
         { dm.publishers.getNonEmpty.map(str => <dcterms:publisher>{ str }</dcterms:publisher>).addAttr(lang) }
         { dm.sources.getNonEmpty.map(str => <dc:source>{ str }</dc:source>).addAttr(lang) }
-        { dm.getSchemedDates.map(date => <x xsi:type={date.scheme.getOrElse("")}>{ date.value }</x>.withLabel(date.qualifier.toString)) }
-        { dm.getPlainDates.map(date => <x>{ date.value }</x>.withLabel(date.qualifier.toString)) }
+        { schemedDates.map(date => <x xsi:type={date.scheme.getOrElse("")}>{ date.value }</x>.withLabel(date.qualifier.toString)) }
+        { plainDates.map(date => <x>{ date.value }</x>.withLabel(date.qualifier.toString)) }
         { dm.license.getNonEmpty.map(str => <dcterms:license>{ str }</dcterms:license>) /* xsi:type="dcterms:URI" not supported by json */ }
       </ddm:dcmiMetadata>
     </ddm:DDM>
@@ -80,28 +82,29 @@ object DatasetXml {
         { <dcx-dai:name>{ organization }</dcx-dai:name>.addAttr(lang) }
       </dcx-dai:organization>
 
-  private implicit class SubmittedDatasetMetadata(val dm: DatasetMetadata) {
+  private implicit class SubmittedDatasetMetadata(val dm: DatasetMetadata) extends AnyVal {
     // getters because we can't override Option[Seq[_]] with Seq[_]
     // private implicit to hide throws while keeping error handling simple, apply wraps it in a try
-    lazy val getAccessRights: AccessRights = dm.accessRights.getOrElse(throwNoContentFor("ddm:accessRights"))
+    def getAccessRights: AccessRights = dm.accessRights.getOrElse(throwNoContentFor("ddm:accessRights"))
 
-    lazy val getCreators: Seq[Author] = dm.creators.getOrElse(Seq.empty).filterNot(_.isRightsHolder)
-    lazy val getContributors: Seq[Author] = dm.contributors.getOrElse(Seq.empty).filterNot(_.isRightsHolder)
-    lazy val getRightsHolders: Seq[Author] = dm.contributors.getOrElse(Seq.empty).filter(_.isRightsHolder) ++
+    def getCreators: Seq[Author] = dm.creators.getOrElse(Seq.empty).filterNot(_.isRightsHolder)
+    def getContributors: Seq[Author] = dm.contributors.getOrElse(Seq.empty).filterNot(_.isRightsHolder)
+    def getRightsHolders: Seq[Author] = dm.contributors.getOrElse(Seq.empty).filter(_.isRightsHolder) ++
       dm.creators.getOrElse(Seq.empty).filter(_.isRightsHolder)
 
-    private lazy val flattenedDates: Seq[QualifiedSchemedValue[String, DateQualifier]] = dm.dates.toSeq.flatten
-    private lazy val specialDateQualifiers = Seq(
+    private def flattenedDates: Seq[QualifiedSchemedValue[String, DateQualifier]] = dm.dates.toSeq.flatten
+    private def specialDateQualifiers = Seq(
       DateQualifier.created, // for ddm:profile
       DateQualifier.available, // for ddm:profile
     )
-    lazy val getDateCreated: Date = getMandatorySingleDate(DateQualifier.created)
-    lazy val getDateAvailable: Date = getMandatorySingleDate(DateQualifier.available)
-    lazy val (getSchemedDates, getPlainDates) = {
+    def getDateCreated: Date = getMandatorySingleDate(DateQualifier.created)
+    def getDateAvailable: Date = getMandatorySingleDate(DateQualifier.available)
+    def getDates: (Seq[QualifiedSchemedValue[String, DateQualifier]], Seq[QualifiedSchemedValue[String, DateQualifier]]) = {
       if (flattenedDates.exists(_.qualifier == DateQualifier.dateSubmitted))
         throw InvalidDocumentException(s"No ${ DateQualifier.dateSubmitted } allowed in DatasetMetadata")
-      (flattenedDates :+ Date(DateTime.now(), DateQualifier.dateSubmitted)
-        ).filterNot(date => specialDateQualifiers.contains(date.qualifier))
+
+      (flattenedDates :+ Date(DateTime.now(), DateQualifier.dateSubmitted))
+        .filterNot(date => specialDateQualifiers.contains(date.qualifier))
     }.partition(_.hasScheme)
 
     private def getMandatorySingleDate(qualifier: DateQualifier): Date = {
