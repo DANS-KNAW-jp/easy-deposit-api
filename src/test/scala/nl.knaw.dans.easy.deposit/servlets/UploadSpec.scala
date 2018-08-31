@@ -157,7 +157,7 @@ class UploadSpec extends TestSupportFixture with ServletFixture with ScalatraSui
     }
   }
 
-  it should "extract all files from a ZIP" in pendingUntilFixed {
+  it should "extract all files from a ZIP" in {
     File("src/test/resources/manual-test/Archive.zip").copyTo(testDir / "input" / "1.zip")
     val uuid = createDataset
     val relativeTarget = "path/to/dir"
