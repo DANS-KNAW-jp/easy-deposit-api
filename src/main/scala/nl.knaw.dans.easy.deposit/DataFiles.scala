@@ -17,7 +17,7 @@ package nl.knaw.dans.easy.deposit
 
 import java.io.InputStream
 import java.nio.file.{ NoSuchFileException, Path, Paths }
-import java.util.zip.ZipInputStream
+import java.util.zip.{ ZipEntry, ZipInputStream }
 
 import better.files._
 import nl.knaw.dans.bag.ChecksumAlgorithm.SHA1
@@ -25,6 +25,7 @@ import nl.knaw.dans.bag.DansBag
 import nl.knaw.dans.easy.deposit.servlets.DepositServlet.BadRequestException
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
+import scala.annotation.tailrec
 import scala.util.{ Failure, Success, Try }
 
 /**
@@ -88,25 +89,33 @@ case class DataFiles(bag: DansBag) extends DebugEnhancedLogging {
     if (zipInputStream.available() == 0)
       Failure(BadRequestException(s"ZIP file is empty."))
     else {
-      Stream.continually(())
-        .takeWhile(_ => zipInputStream.available() > 0) // FIXME extracts just one file
-        .map(_ =>
-          Option(zipInputStream.getNextEntry) match {
-            case None => Failure(BadRequestException(s"ZIP file is malformed. Empty entry."))
-            case Some(entry) =>
-              logger.info(s"Extracting ${ entry.getName } size=${ entry.getSize } compressedSize=${ entry.getCompressedSize } CRC=${ entry.getCrc }")
-              val fullPath = path.resolve(entry.getName)
-              for {
-                _ <- if ((bag.data / fullPath.toString).exists)
-                       removeFile(fullPath)
-                     else Success(())
-                _ <- bag.addPayloadFile(zipInputStream, fullPath)
-                _ <- bag.save
-              } yield ()
-          }
-        )
-        .find(_.isFailure)
-        .getOrElse(Success(()))
+      @tailrec
+      def recurse(nextEntry: ZipEntry): Try[Unit] = {
+        Option(nextEntry) match {
+          case None => // end of zip
+            Success(())
+          case Some(entry) if entry.getName contains "__MACOSX" => // skip __MACOSX files
+            recurse(zipInputStream.getNextEntry)
+          case Some(entry) =>
+            logger.info(s"Extracting ${ entry.getName } size=${ entry.getSize } compressedSize=${ entry.getCompressedSize } CRC=${ entry.getCrc }")
+            val fullPath = path.resolve(entry.getName)
+            val result = for {
+              _ <- if ((bag.data / fullPath.toString).exists) removeFile(fullPath)
+                   else Success(())
+              _ <- bag.addPayloadFile(zipInputStream, fullPath)
+              _ <- bag.save
+            } yield ()
+
+            result match {
+              case Success(()) => recurse(zipInputStream.getNextEntry)
+              case Failure(e) => Failure(e)
+            }
+        }
+      }
+
+      Option(zipInputStream.getNextEntry)
+        .map(recurse)
+        .getOrElse(Failure(BadRequestException(s"ZIP file is malformed. Empty entry.")))
     }
   }
 
