@@ -39,8 +39,7 @@ object DDM extends DebugEnhancedLogging {
   val schemaLocation: String = "https://easy.dans.knaw.nl/schemas/md/2017/09/ddm.xsd"
 
   def apply(dm: DatasetMetadata): Try[Elem] = Try {
-    implicit val lang: Option[Attribute] = dm.languageOfDescription.map(
-      l => new PrefixedAttribute("xml", "lang", l.key, Null))
+    implicit val lang: Option[Attribute] = dm.languageOfDescription.map(l => new PrefixedAttribute("xml", "lang", l.key, Null))
 
     // validation like mustBeNonEmpty and mustHaveOne
     dm.doi.getOrElse(throwInvalidDocumentException(s"Please first GET a DOI for this deposit"))
