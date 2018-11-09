@@ -25,6 +25,8 @@ import scala.collection.JavaConverters._
  */
 trait ResponseLogFormatter extends CookieFormatter {
 
+  implicit val responseLogger: ResponseLogFormatter = this
+
   protected def authHeadersToString(headerMap: HeaderMap): String =
     formatAuthHeaders(headerMap).makeString
 
@@ -94,4 +96,7 @@ trait ResponseLogFormatter extends CookieFormatter {
     val formattedActionHeaders = actionHeadersToString(actionResult)
     s"${ method } returned status=${ status }; authHeaders=$formattedAuthHeaders; actionHeaders=$formattedActionHeaders"
   }
+
+  def logResponse(actionResult: ActionResult)
+                 (implicit request: HttpServletRequest, response: HttpServletResponse): Unit
 }

@@ -19,14 +19,15 @@ import java.net.URL
 
 import nl.knaw.dans.easy.deposit.authentication.AuthUser.UserState
 import nl.knaw.dans.easy.deposit.authentication.AuthenticationSupport._
-import nl.knaw.dans.easy.deposit.servlets._
+import nl.knaw.dans.easy.deposit.logging.ResponseLogFormatter
+import nl.knaw.dans.easy.deposit.logging.ResponseLogger._
 import nl.knaw.dans.lib.error._
 import org.scalatra._
 import org.scalatra.auth.ScentryAuthStore.CookieAuthStore
 import org.scalatra.auth.{ ScentryConfig, ScentrySupport }
 
 trait AuthenticationSupport extends ScentrySupport[AuthUser] {
-  self: ScalatraBase with TokenSupport with AuthConfig =>
+  self: ScalatraBase with TokenSupport with AuthConfig with ResponseLogFormatter =>
 
   /** read method name as: fromCookie, see configured scentry.store */
   override protected def fromSession: PartialFunction[String, AuthUser] = {
