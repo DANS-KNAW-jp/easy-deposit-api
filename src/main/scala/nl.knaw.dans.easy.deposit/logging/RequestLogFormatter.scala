@@ -44,28 +44,34 @@ trait RequestLogFormatter extends DebugEnhancedLogging with CookieFormatter {
    */
   protected def formatHeaders(headers: HeaderMap): HeaderMap = {
     headers.map {
-      case (name, values) if name.toLowerCase == "cookie" => name -> values.map(formatCookieValue)
-      case (name, values) if name.toLowerCase.endsWith("authorization") => name -> values.map(formatValueOfAuthorizationHeader)
+      case (name, values) if name.toLowerCase == "cookie" =>
+        name -> values.map(formatCookieValue)
+      case (name, values) if name.toLowerCase.endsWith("authorization") =>
+        name -> values.map(formatValueOfAuthorizationHeader)
       case kv => kv
     }
   }
 
   private def getHeaderMap: HeaderMap = {
     // looks the same method as for ResponseLogFormatter, but everywhere different classes
-    request.getHeaderNames.asScala.toSeq.map(
-      name => name -> Option(request.getHeaders(name)).map(_.asScala.toSeq).getOrElse(Seq.empty)
-    )
-  }.toMap
+    request.getHeaderNames
+      .asScala.toSeq
+      .map(name => name -> Option(request.getHeaders(name)).map(_.asScala.toSeq).getOrElse(Seq.empty))
+      .toMap
+  }
 
   /**
    * Formats the value of headers with a case insensitive name ending with "authorization".
-   * The default implementation keeps the key like "basic", "digest" and "bearer" but masks the actual credentials.
+   * The default implementation keeps the key like "basic", "digest" and "bearer" but masks the
+   * actual credentials.
    */
   protected def formatValueOfAuthorizationHeader(value: String): String = {
     value.replaceAll(" .+", " *****")
   }
 
-  protected def parametersToString(params: MultiParams): String = formatParameters(params).makeString
+  protected def parametersToString(params: MultiParams): String = {
+    formatParameters(params).makeString
+  }
 
   /**
    * Formats request parameters.
@@ -74,7 +80,8 @@ trait RequestLogFormatter extends DebugEnhancedLogging with CookieFormatter {
    */
   protected def formatParameters(params: MultiParams): MultiParams = {
     params.map {
-      case (name, values) if Seq("login", "password").contains(name.toLowerCase) => name -> values.map(_ => "*****")
+      case (name, values) if Seq("login", "password") contains name.toLowerCase =>
+        name -> values.map(_ => "*****")
       case kv => kv
     }
   }
@@ -88,8 +95,9 @@ trait RequestLogFormatter extends DebugEnhancedLogging with CookieFormatter {
    *
    * Services without public access might not need to mask.
    */
-  protected def formatRemoteAddress(remoteAddress: String): String = remoteAddress
-    .replaceAll("[0-9]+[.][0-9]+$", "**.**")
+  protected def formatRemoteAddress(remoteAddress: String): String = {
+    remoteAddress.replaceAll("[0-9]+[.][0-9]+$", "**.**")
+  }
 
   /**
    * Assembles the content for a log line.
