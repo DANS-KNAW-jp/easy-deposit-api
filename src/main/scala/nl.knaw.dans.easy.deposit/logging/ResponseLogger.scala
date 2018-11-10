@@ -12,15 +12,3 @@ trait ResponseLogger extends DebugEnhancedLogging with ResponseLogFormatter {
     logger.info(formatResponseLog(actionResult))
   }
 }
-
-object ResponseLogger {
-
-  implicit class RichActionResult(val actionResult: ActionResult) extends AnyVal {
-    def logResponse(implicit request: HttpServletRequest,
-                    response: HttpServletResponse,
-                    responseLogger: ResponseLogFormatter): ActionResult = {
-      responseLogger.logResponse(actionResult)
-      actionResult
-    }
-  }
-}

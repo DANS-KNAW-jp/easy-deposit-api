@@ -15,6 +15,9 @@
  */
 package nl.knaw.dans.easy.deposit
 
+import javax.servlet.http.{ HttpServletRequest, HttpServletResponse }
+import org.scalatra.ActionResult
+
 //TODO: candidate for dans-scala-lib
 
 /**
@@ -79,5 +82,14 @@ package object logging {
   /** Extension for [[HeaderMap]] and [[org.scalatra.MultiParams]]. */
   implicit class NestedStringMapExtensions(val headerMap: Map[String, Seq[String]]) extends AnyVal {
     def makeString: String = headerMap.map { case (k, v) => k -> v.mkString("[", ", ", "]") }.makeString
+  }
+
+  implicit class LogResponseSyntax(val actionResult: ActionResult) extends AnyVal {
+    def logResponse(implicit request: HttpServletRequest,
+                    response: HttpServletResponse,
+                    responseLogger: ResponseLogFormatter): ActionResult = {
+      responseLogger.logResponse(actionResult)
+      actionResult
+    }
   }
 }

@@ -19,8 +19,7 @@ import java.net.URL
 
 import nl.knaw.dans.easy.deposit.authentication.AuthUser.UserState
 import nl.knaw.dans.easy.deposit.authentication.AuthenticationSupport._
-import nl.knaw.dans.easy.deposit.logging.ResponseLogFormatter
-import nl.knaw.dans.easy.deposit.logging.ResponseLogger._
+import nl.knaw.dans.easy.deposit.logging._
 import nl.knaw.dans.lib.error._
 import org.scalatra._
 import org.scalatra.auth.ScentryAuthStore.CookieAuthStore
@@ -75,8 +74,10 @@ trait AuthenticationSupport extends ScentrySupport[AuthUser] {
    * progressively use all registered strategies to log the user in, falling back if necessary.
    */
   override protected def registerAuthStrategies: Unit = {
-    scentry.register(UserPasswordStrategy.getClass.getSimpleName, _ => new UserPasswordStrategy(self, getAuthenticationProvider))
-    scentry.register(EasyBasicAuthStrategy.getClass.getSimpleName, _ => new EasyBasicAuthStrategy(self, getAuthenticationProvider, realm))
+    scentry.register(UserPasswordStrategy.getClass.getSimpleName,
+      _ => new UserPasswordStrategy(self, getAuthenticationProvider))
+    scentry.register(EasyBasicAuthStrategy.getClass.getSimpleName,
+      _ => new EasyBasicAuthStrategy(self, getAuthenticationProvider, realm))
 
     // don't need a cookie-with-token strategy:
     // scentry uses the configured scentry.store and the implementation of from/to-Session methods
