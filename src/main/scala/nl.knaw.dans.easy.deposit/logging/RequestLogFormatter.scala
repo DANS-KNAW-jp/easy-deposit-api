@@ -56,7 +56,8 @@ trait RequestLogFormatter extends CookieFormatter {
     request.getHeaderNames
       .asScala.toSeq
       .map(
-        name => name -> Option(request.getHeaders(name)).map(_.asScala.toSeq).getOrElse(Seq.empty))
+        name => name -> Option(request.getHeaders(name)).map(_.asScala.toSeq).getOrElse(Seq.empty)
+      )
       .toMap
   }
 
