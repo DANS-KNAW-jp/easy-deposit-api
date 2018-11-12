@@ -55,14 +55,15 @@ trait RequestLogFormatter extends CookieFormatter {
     // looks the same method as for ResponseLogFormatter, but everywhere different classes
     request.getHeaderNames
       .asScala.toSeq
-      .map(name => name -> Option(request.getHeaders(name)).map(_.asScala.toSeq).getOrElse(Seq.empty))
+      .map(
+        name => name -> Option(request.getHeaders(name)).map(_.asScala.toSeq).getOrElse(Seq.empty))
       .toMap
   }
 
   /**
    * Formats the value of headers with a case insensitive name ending with "authorization".
-   * The default implementation keeps the key like "basic", "digest" and "bearer" but masks the
-   * actual credentials.
+   * The default implementation keeps the key like "basic", "digest" and "bearer"
+   * but masks the actual credentials.
    */
   protected def formatValueOfAuthorizationHeader(value: String): String = {
     value.replaceAll(" .+", " *****")
