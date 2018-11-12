@@ -89,7 +89,7 @@ package object logging {
   implicit class LogResponseSyntax(val actionResult: ActionResult) extends AnyVal {
     def logResponse(implicit request: HttpServletRequest,
                     response: HttpServletResponse,
-                    responseLogger: ResponseLogFormatter): ActionResult = {
+                    responseLogger: AbstractResponseLogger): ActionResult = {
       responseLogger.logResponse(actionResult)
       actionResult
     }

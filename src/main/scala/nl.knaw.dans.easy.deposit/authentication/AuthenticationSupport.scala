@@ -26,7 +26,7 @@ import org.scalatra.auth.ScentryAuthStore.CookieAuthStore
 import org.scalatra.auth.{ ScentryConfig, ScentrySupport }
 
 trait AuthenticationSupport extends ScentrySupport[AuthUser] {
-  self: ScalatraBase with TokenSupport with AuthConfig with ResponseLogFormatter =>
+  self: ScalatraBase with TokenSupport with AuthConfig with AbstractResponseLogger =>
 
   /** read method name as: fromCookie, see configured scentry.store */
   override protected def fromSession: PartialFunction[String, AuthUser] = {
@@ -74,8 +74,10 @@ trait AuthenticationSupport extends ScentrySupport[AuthUser] {
    * progressively use all registered strategies to log the user in, falling back if necessary.
    */
   override protected def registerAuthStrategies: Unit = {
-    scentry.register(UserPasswordStrategy.getClass.getSimpleName, _ => new UserPasswordStrategy(self, getAuthenticationProvider))
-    scentry.register(EasyBasicAuthStrategy.getClass.getSimpleName, _ => new EasyBasicAuthStrategy(self, getAuthenticationProvider, realm))
+    scentry.register(UserPasswordStrategy.getClass.getSimpleName,
+      _ => new UserPasswordStrategy(self, getAuthenticationProvider))
+    scentry.register(EasyBasicAuthStrategy.getClass.getSimpleName,
+      _ => new EasyBasicAuthStrategy(self, getAuthenticationProvider, realm))
 
     // don't need a cookie-with-token strategy:
     // scentry uses the configured scentry.store and the implementation of from/to-Session methods

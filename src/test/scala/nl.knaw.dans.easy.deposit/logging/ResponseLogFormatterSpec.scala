@@ -25,19 +25,19 @@ import org.scalatra.Ok
 class ResponseLogFormatterSpec extends TestSupportFixture with MockFactory {
 
   "ResponseLogFormatter" should "mask everything" in {
-    new ResponseLogger() {}
+    new ResponseLogFormatter() {}
       .formatResponseLog(Ok())(mockRequest, mockResponse) shouldBe
       "GET returned status=200; authHeaders=[Set-Cookie -> [scentry.auth.default.user=******.**.**], REMOTE_USER -> [*****], Expires -> [Thu, 01 Jan 1970 00:00:00 GMT]]; actionHeaders=[]"
   }
 
   it should "not mask anything" in {
-    new ResponseLogger() with PlainAuthResponseHeaders {}
+    new ResponseLogFormatter() with PlainAuthResponseHeaders {}
       .formatResponseLog(Ok(headers = Map("some" -> "header")))(mockRequest, mockResponse) shouldBe
       "GET returned status=200; authHeaders=[Set-Cookie -> [scentry.auth.default.user=abc456.pq.xy], REMOTE_USER -> [somebody], Expires -> [Thu, 01 Jan 1970 00:00:00 GMT]]; actionHeaders=[some -> header]"
   }
 
   it should "not mask cookies" in {
-    new ResponseLogger() with PlainCookies {}
+    new ResponseLogFormatter() with PlainCookies {}
       .formatResponseLog(Ok(headers = Map("some" -> "header")))(mockRequest, mockResponse) shouldBe
       "GET returned status=200; authHeaders=[Set-Cookie -> [scentry.auth.default.user=abc456.pq.xy], REMOTE_USER -> [*****], Expires -> [Thu, 01 Jan 1970 00:00:00 GMT]]; actionHeaders=[some -> header]"
   }
