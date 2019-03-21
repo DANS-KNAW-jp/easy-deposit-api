@@ -25,7 +25,6 @@ object Spatial {
 
 trait SchemedSpatial {
   val scheme: Option[String]
-
   lazy val srsName: String = {
     scheme match {
       case Some("degrees") => Spatial.DEGREES_SRS_NAME
@@ -36,17 +35,32 @@ trait SchemedSpatial {
   }
 }
 
-case class SpatialPoint(override val scheme: Option[String],
-                        x: Option[String],
-                        y: Option[String],
-                       ) extends SchemedSpatial {
-  private val sx: String = x.getOrElse("")
-  private val sy: String = y.getOrElse("")
-  lazy val pos: String = srsName match {
-    case Spatial.RD_SRS_NAME => s"$sx $sy"
-    case Spatial.DEGREES_SRS_NAME => s"$sy $sx"
-    case _ => s"$sy $sx"
-  }
+trait SpatialPoint extends SchemedSpatial {
+
+  /**
+   * The value for
+   *
+   * <dcx-gml:spatial>
+   *    <Point xmlns="http://www.opengis.net/gml">
+   *     <pos>{ pos }</pos>
+   *   </Point>
+   * </dcx-gml:spatial>
+   */
+  val pos: String
+}
+
+case class SpatialPointXY(override val scheme: Option[String],
+                          x: Option[String],
+                          y: Option[String],
+                         ) extends SpatialPoint {
+  lazy val pos: String = s"${ x.getOrElse("") } ${ y.getOrElse("") }"
+}
+
+case class SpatialPointLatLong(override val scheme: Option[String],
+                               lat: Option[String],
+                               long: Option[String],
+                              ) extends SpatialPoint {
+  lazy val pos: String = s"${ long.getOrElse("") } ${ lat.getOrElse("") }"
 }
 
 case class SpatialBox(override val scheme: Option[String],

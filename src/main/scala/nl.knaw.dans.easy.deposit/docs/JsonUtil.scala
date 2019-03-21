@@ -42,7 +42,7 @@ object JsonUtil {
       case JString(s) => Paths.get(s)
       case JNull => null
     }, {
-      case x: Path => JString(x.toString)
+      case x: Path => JString(x.toString) // TODO would break rejectNotExpectedContent for complex fields?
     }
     )
   )
@@ -50,12 +50,11 @@ object JsonUtil {
   class RelationTypeSerializer extends CustomSerializer[RelationType](_ =>
     ( {
       case JNull => null
-      case s: JValue =>
-        if (s.asInstanceOf[JObject].obj.values.keySet.subsetOf(Set("qualifier", "url", "title")))
-          Extraction.extract[Relation](s)
-        else Extraction.extract[RelatedIdentifier](s)
+      case obj: JObject =>
+        if (obj.values.keySet.subsetOf(Set("qualifier", "url", "title")))
+          Extraction.extract[Relation](obj)
+        else Extraction.extract[RelatedIdentifier](obj)
     }, {
-      // case x: RelationType => JString(x.toString) // would break rejectNotExpectedContent
       case Relation(qualifier, url, title) =>
         ("qualifier" -> qualifier.map(_.toString)) ~
           ("url" -> url) ~
@@ -64,6 +63,33 @@ object JsonUtil {
         ("scheme" -> scheme) ~
           ("value" -> value) ~
           ("qualifier" -> qualifier.map(_.toString))
+    }
+    )
+  )
+
+  class SpatialPointSerializer extends CustomSerializer[SpatialPoint](_ =>
+    ( {
+      case JNull => null
+      case obj: JObject =>
+        (obj.values.keySet.subsetOf(Set("scheme", "lat", "long")),
+         obj.values.keySet.subsetOf(Set("scheme", "x", "y")),
+          obj.values("scheme") // TODO actual type is Any
+        ) match{
+          case (true,_, Some(Spatial.DEGREES_SRS_NAME)) |
+               (true,_, None) => Extraction.extract[SpatialPointLatLong](obj)
+          case (_,true, Some(Spatial.RD_SRS_NAME)) |
+               (_,true, None) => Extraction.extract[SpatialPointXY](obj)
+          case _ => null // TODO expecting the same error (not recognized field) as on { "foo": ??? }
+        }
+    }, {
+      case SpatialPointLatLong(scheme, lat, long) =>
+        ("scheme" -> scheme.map(_.toString)) ~
+          ("lat" -> lat) ~
+          ("long" -> long)
+      case SpatialPointXY(scheme, x, y) =>
+        ("scheme" -> scheme) ~
+          ("x" -> x) ~
+          ("y" -> y.map(_.toString))
     }
     )
   )
