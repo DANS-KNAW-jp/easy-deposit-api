@@ -137,7 +137,7 @@ class DepositServlet(app: EasyDepositApiApp)
         _ = logger.info(s"[$uuid] changing state to ${ stateInfo.state } with description ${ stateInfo.stateDescription }")
         _ <- app.setDepositState(stateInfo, user.id, uuid)
       } yield NoContent()
-      }.getOrRecoverWithActionResult
+    }.getOrRecoverWithActionResult
   }
   delete("/:uuid") {
     {
